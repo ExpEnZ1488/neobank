@@ -1,8 +1,7 @@
 {
-  "name": "NeoBank",
-  "short_name": "NeoBank",
-  "start_url": "/",
-  "display": "standalone",
+"start_url": "/",
+"scope": "/",
+"display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "orientation": "portrait",
