@@ -2310,5 +2310,36 @@ applyTheme();
 document.addEventListener("DOMContentLoaded", () => {
   showAuth();
 });
+/* ===== FIX AUTH + PIN AUTO START ===== */
+
+document.addEventListener("DOMContentLoaded", function(){
+
+  // если есть authScreen — показываем его
+  const auth = document.getElementById("authScreen");
+  const pin = document.getElementById("pinScreen");
+
+  if(auth){
+    auth.style.display = "flex";
+  }
+
+  if(pin){
+    pin.style.display = "none";
+  }
+
+});
+
+/* переопределяем showPin безопасно */
+window.showPin = function(){
+  const auth = document.getElementById("authScreen");
+  const pin = document.getElementById("pinScreen");
+
+  if(auth) auth.style.display = "none";
+  if(pin) pin.style.display = "flex";
+
+  if(typeof setupPin === "function"){
+    setupPin();
+  }
+};
+
 
 
