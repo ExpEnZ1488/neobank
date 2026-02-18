@@ -1140,6 +1140,476 @@ input::placeholder{ color: color-mix(in srgb, var(--muted) 85%, transparent); }
 </div>
 
 <script>
+  /* ==========================================================
+   NEOAUTH v1 — красивый AUTH (Login/Register) + Welcome
+   ВСТАВЬ ПЕРЕД </script> (внутри твоего текущего <script>)
+   Ничего сверху не удаляет, только добавляет и аккуратно управляет экранами.
+========================================================== */
+(function NEOAUTH_V1(){
+  // --- safety: если нет state/save/$ — выходим
+  if(typeof window.state === "undefined" || typeof window.save !== "function" || typeof window.$ !== "function"){
+    console.warn("[NEOAUTH] state/save/$ не найдены. Вставь код ВНУТРИ твоего <script> где они уже есть.");
+    return;
+  }
+
+  // --- ensure accounts storage in your state
+  if(!state.accounts) state.accounts = [];
+  if(!state.session) state.session = { user: null, loggedIn: false };
+  save();
+
+  // --- inject CSS (beautiful centered card)
+  const css = `
+  /* ===================== NEOAUTH UI ===================== */
+  .neoauth-wrap{
+    position:fixed; inset:0; z-index:2000;
+    display:none; align-items:center; justify-content:center;
+    padding:18px;
+    background: var(--overlay);
+    animation: fadeIn .18s var(--ease) both;
+  }
+  .neoauth-wrap.show{ display:flex; }
+
+  .neoauth-card{
+    width:min(460px, calc(100% - 28px));
+    background: var(--card);
+    border:1px solid var(--border);
+    border-radius: 26px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    position:relative;
+    overflow:hidden;
+    animation: pop .22s var(--ease) both;
+  }
+  .neoauth-card::after{
+    content:"";
+    position:absolute; inset:-40%;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.12), rgba(255,255,255,0));
+    transform: translateX(-70%) rotate(10deg);
+    animation:sparkle 3.2s var(--ease2) infinite;
+    opacity:.45;
+    pointer-events:none;
+  }
+
+  .neoauth-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin: 2px 2px 10px;
+  }
+  .neoauth-brand{
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .neoauth-title{
+    font-weight: 950;
+    letter-spacing: .2px;
+    font-size: 18px;
+  }
+  .neoauth-sub{
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .neoauth-chip{
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.04);
+    font-size:12px;
+    color:var(--text);
+    white-space:nowrap;
+  }
+
+  .neoauth-tabs{
+    display:flex; gap:8px;
+    margin: 10px 2px 12px;
+  }
+  .neoauth-tab{
+    flex:1;
+    text-align:center;
+    padding:10px 12px;
+    border-radius: 16px;
+    border:1px solid var(--border);
+    background: rgba(255,255,255,.04);
+    cursor:pointer;
+    font-weight:950;
+    user-select:none;
+  }
+  .neoauth-tab.active{
+    background: rgba(255,204,0,.18);
+    border-color: rgba(255,204,0,.45);
+  }
+
+  .neoauth-body{ padding: 0 2px 4px; }
+  .neoauth-row{ display:grid; gap:10px; margin-top: 10px; }
+
+  .neoauth-actions{
+    display:flex; gap:10px;
+    margin-top:12px;
+  }
+  .neoauth-actions .btn, .neoauth-actions .btn-ghost{ width:100%; }
+
+  .neoauth-mini{
+    margin-top:10px;
+    font-size:12px;
+    color: var(--muted);
+    display:flex; gap:8px; align-items:center;
+    opacity:.92;
+  }
+  .neoauth-mini b{ color: color-mix(in srgb, var(--accent) 70%, white); }
+  .neoauth-mini .dot{
+    width:8px;height:8px;border-radius:50%;
+    background: rgba(255,204,0,.55);
+    box-shadow: 0 0 22px rgba(255,204,0,.20);
+    border:none;
+  }
+
+  /* Welcome overlay */
+  .neoauth-welcome{
+    position:fixed; inset:0; z-index:2100;
+    display:none; align-items:center; justify-content:center;
+    background: var(--overlay);
+  }
+  .neoauth-welcome.show{ display:flex; animation: fadeIn .18s var(--ease) both; }
+
+  .neoauth-wc{
+    width:min(380px, calc(100% - 28px));
+    background: var(--card);
+    border:1px solid var(--border);
+    border-radius: 26px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    text-align:center;
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    animation: pop .22s var(--ease) both;
+    position:relative;
+    overflow:hidden;
+  }
+  .neoauth-wc::after{
+    content:"";
+    position:absolute; inset:-40%;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.14), rgba(255,255,255,0));
+    transform: translateX(-70%) rotate(10deg);
+    animation:sparkle 1.8s var(--ease2) infinite;
+    opacity:.55;
+    pointer-events:none;
+  }
+  .neoauth-wc .big{
+    font-weight:950;
+    font-size:18px;
+    margin-top:6px;
+  }
+  .neoauth-wc .small{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .neoauth-wc .ring{
+    position:relative;
+    width:78px;height:78px;
+    margin:0 auto 10px;
+    border-radius:50%;
+    border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,204,0,.10);
+    display:grid; place-items:center;
+  }
+  .neoauth-wc .ring::before{
+    content:"";
+    position:absolute; inset:10px;
+    border-radius:50%;
+    border:3px solid rgba(255,204,0,.25);
+    border-top-color: rgba(255,204,0,.85);
+    animation: ringSpin 1.8s linear infinite;
+  }
+  .neoauth-wc .ring span{
+    font-size:11px;
+    color: var(--muted);
+    font-weight:900;
+  }
+  `;
+
+  const style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  // --- inject HTML screens
+  const wrap = document.createElement("div");
+  wrap.className = "neoauth-wrap";
+  wrap.id = "neoauthWrap";
+  wrap.innerHTML = `
+    <div class="neoauth-card" role="dialog" aria-modal="true">
+      <div class="neoauth-head">
+        <div class="neoauth-brand">
+          <div class="neoauth-title">NeoBank • Авторизація</div>
+          <div class="neoauth-sub">Вхід або створення акаунта. Після входу — PIN екран як у тебе.</div>
+        </div>
+        <div class="neoauth-chip">✨ Premium Auth</div>
+      </div>
+
+      <div class="neoauth-tabs">
+        <div class="neoauth-tab active" id="neoauthTabLogin">Увійти</div>
+        <div class="neoauth-tab" id="neoauthTabReg">Реєстрація</div>
+      </div>
+
+      <div class="neoauth-body">
+        <!-- LOGIN -->
+        <div id="neoauthLogin">
+          <div class="neoauth-row">
+            <input id="neoLoginNick" placeholder="Нік" autocomplete="username" />
+            <input id="neoLoginPin" placeholder="PIN (4 цифри)" inputmode="numeric" maxlength="4" autocomplete="current-password" />
+          </div>
+          <div class="hint" id="neoLoginHint"></div>
+          <div class="neoauth-actions">
+            <button class="btn" type="button" id="neoBtnLogin">Увійти</button>
+            <button class="btn-ghost" type="button" id="neoBtnToReg">Немає акаунта</button>
+          </div>
+          <div class="neoauth-mini"><span class="dot"></span> Порада: якщо PIN не міняв — він <b>1234</b></div>
+        </div>
+
+        <!-- REGISTER -->
+        <div id="neoauthReg" style="display:none;">
+          <div class="neoauth-row">
+            <input id="neoRegNick" placeholder="Нік" autocomplete="username" />
+            <input id="neoRegEmail" placeholder="Пошта (для вигляду)" autocomplete="email" />
+            <input id="neoRegPin" placeholder="PIN (4 цифри)" inputmode="numeric" maxlength="4" />
+            <input id="neoRegPin2" placeholder="Повторіть PIN" inputmode="numeric" maxlength="4" />
+          </div>
+          <div class="hint" id="neoRegHint"></div>
+          <div class="neoauth-actions">
+            <button class="btn" type="button" id="neoBtnReg">Створити</button>
+            <button class="btn-ghost" type="button" id="neoBtnToLogin">Вже є акаунт</button>
+          </div>
+          <div class="neoauth-mini"><span class="dot"></span> Дані зберігаються в <b>localStorage</b> (демо)</div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  const welcome = document.createElement("div");
+  welcome.className = "neoauth-welcome";
+  welcome.id = "neoauthWelcome";
+  welcome.innerHTML = `
+    <div class="neoauth-wc">
+      <div class="ring"><span>WELCOME</span></div>
+      <div class="big" id="neoWelcomeTitle">Ласкаво просимо 👋</div>
+      <div class="small" id="neoWelcomeSub">NeoBank завантажується…</div>
+    </div>
+  `;
+  document.body.appendChild(welcome);
+
+  // --- helpers
+  const onlyDigits4 = (v)=> (String(v||"").replace(/\D/g,"").slice(0,4));
+  function setHint(id, text, ok){
+    const el = $(id);
+    if(!el) return;
+    el.textContent = text || "";
+    el.className = "hint" + (text ? (ok ? " ok" : " bad") : "");
+  }
+
+  // --- tab switching
+  function showLogin(){
+    $("neoauthLogin").style.display = "block";
+    $("neoauthReg").style.display = "none";
+    $("neoauthTabLogin").classList.add("active");
+    $("neoauthTabReg").classList.remove("active");
+    setHint("neoLoginHint","",false);
+    setHint("neoRegHint","",false);
+    setTimeout(()=> $("neoLoginNick")?.focus(), 0);
+  }
+  function showReg(){
+    $("neoauthLogin").style.display = "none";
+    $("neoauthReg").style.display = "block";
+    $("neoauthTabLogin").classList.remove("active");
+    $("neoauthTabReg").classList.add("active");
+    setHint("neoLoginHint","",false);
+    setHint("neoRegHint","",false);
+    setTimeout(()=> $("neoRegNick")?.focus(), 0);
+  }
+
+  $("neoauthTabLogin").onclick = showLogin;
+  $("neoauthTabReg").onclick = showReg;
+  $("neoBtnToReg").onclick = showReg;
+  $("neoBtnToLogin").onclick = showLogin;
+
+  // --- input restrictions
+  $("neoLoginPin").addEventListener("input", ()=>{ $("neoLoginPin").value = onlyDigits4($("neoLoginPin").value); });
+  $("neoRegPin").addEventListener("input", ()=>{ $("neoRegPin").value = onlyDigits4($("neoRegPin").value); });
+  $("neoRegPin2").addEventListener("input", ()=>{ $("neoRegPin2").value = onlyDigits4($("neoRegPin2").value); });
+
+  // --- show/hide app/pin/auth
+  function hideAll(){
+    if($("app")) $("app").style.display = "none";
+    if($("pinScreen")) $("pinScreen").style.display = "none";
+  }
+  function openAuth(){
+    hideAll();
+    $("neoauthWrap").classList.add("show");
+  }
+  function closeAuth(){
+    $("neoauthWrap").classList.remove("show");
+  }
+  function showWelcome(nick){
+    $("neoWelcomeTitle").textContent = `Привіт, ${nick} 👋`;
+    $("neoWelcomeSub").textContent = "Авторизація успішна • Відкриваю PIN…";
+    $("neoauthWelcome").classList.add("show");
+    setTimeout(()=> $("neoauthWelcome").classList.remove("show"), 950);
+  }
+
+  // --- Register
+  $("neoBtnReg").onclick = ()=>{
+    const nick = ($("neoRegNick").value || "").trim();
+    const email = ($("neoRegEmail").value || "").trim();
+    const p1 = onlyDigits4($("neoRegPin").value);
+    const p2 = onlyDigits4($("neoRegPin2").value);
+
+    if(!nick || nick.length < 3){
+      setHint("neoRegHint","Нік має бути мінімум 3 символи", false);
+      return;
+    }
+    if(state.accounts.some(a => (a.nick||"").toLowerCase() === nick.toLowerCase())){
+      setHint("neoRegHint","Такий нік вже зайнятий", false);
+      return;
+    }
+    if(p1.length !== 4 || p2.length !== 4){
+      setHint("neoRegHint","PIN має бути з 4 цифр", false);
+      return;
+    }
+    if(p1 !== p2){
+      setHint("neoRegHint","PIN не співпадають", false);
+      return;
+    }
+
+    state.accounts.push({
+      id: Date.now(),
+      nick,
+      email,
+      pin: p1,          // демо: зберігаємо як є (без бекенда це нормально для тренувального проекту)
+      createdAt: new Date().toISOString()
+    });
+
+    // session + link pin to your existing system
+    state.session.user = nick;
+    state.session.loggedIn = true;
+    state.pin = p1;     // чтобы твой pinScreen работал
+    save();
+
+    setHint("neoRegHint","Акаунт створено ✅", true);
+    toast?.("Реєстрація", "Готово ✅");
+    showWelcome(nick);
+
+    setTimeout(()=>{
+      closeAuth();
+      // показываем твой PIN экран (как ты хотел)
+      if($("pinScreen")){
+        $("pinScreen").style.display = "flex";
+        // сброс введённого пина, если есть переменная
+        if(typeof window.enteredPin !== "undefined") window.enteredPin = "";
+        if(typeof window.setupPin === "function") window.setupPin();
+      } else {
+        // если pinScreen нет — открываем app
+        if($("app")) $("app").style.display = "block";
+        if(typeof window.initApp === "function") window.initApp();
+      }
+    }, 520);
+  };
+
+  // --- Login
+  $("neoBtnLogin").onclick = ()=>{
+    const nick = ($("neoLoginNick").value || "").trim();
+    const pin = onlyDigits4($("neoLoginPin").value);
+
+    if(!nick){
+      setHint("neoLoginHint","Введіть нік", false);
+      return;
+    }
+    if(pin.length !== 4){
+      setHint("neoLoginHint","PIN має бути з 4 цифр", false);
+      return;
+    }
+
+    const acc = state.accounts.find(a => (a.nick||"").toLowerCase() === nick.toLowerCase());
+    if(!acc){
+      setHint("neoLoginHint","Акаунт не знайдено. Натисни «Немає акаунта»", false);
+      return;
+    }
+    if(acc.pin !== pin){
+      setHint("neoLoginHint","Невірний PIN", false);
+      toast?.("Невірний PIN", "Спробуйте ще раз");
+      return;
+    }
+
+    // session + attach pin to your existing system
+    state.session.user = acc.nick;
+    state.session.loggedIn = true;
+    state.pin = acc.pin; // чтобы твой pinScreen сверял с правильным пином
+    save();
+
+    setHint("neoLoginHint","Успішно ✅", true);
+    toast?.("Вхід", "Успішно ✅");
+    showWelcome(acc.nick);
+
+    setTimeout(()=>{
+      closeAuth();
+      if($("pinScreen")){
+        $("pinScreen").style.display = "flex";
+        if(typeof window.enteredPin !== "undefined") window.enteredPin = "";
+        if(typeof window.setupPin === "function") window.setupPin();
+      } else {
+        if($("app")) $("app").style.display = "block";
+        if(typeof window.initApp === "function") window.initApp();
+      }
+    }, 520);
+  };
+
+  // --- optional: enter key support
+  ["neoLoginNick","neoLoginPin"].forEach(id=>{
+    $(id).addEventListener("keydown",(e)=>{ if(e.key==="Enter") $("neoBtnLogin").click(); });
+  });
+  ["neoRegNick","neoRegEmail","neoRegPin","neoRegPin2"].forEach(id=>{
+    $(id).addEventListener("keydown",(e)=>{ if(e.key==="Enter") $("neoBtnReg").click(); });
+  });
+
+  // --- Hook your logout() so it returns to AUTH
+  if(typeof window.logout === "function" && !window.__neoauth_logout_patched){
+    window.__neoauth_logout_patched = true;
+    const oldLogout = window.logout;
+    window.logout = function(){
+      try{ oldLogout(); }catch(e){}
+      state.session = { user: null, loggedIn: false };
+      save();
+      openAuth();
+    };
+  }
+
+  // --- Start behavior:
+  // show AUTH first, then after login we show PIN screen.
+  function startAuthFlow(){
+    hideAll();
+
+    // если уже логинился ранее — можно сразу показать PIN экран
+    if(state.session && state.session.loggedIn && state.session.user){
+      const acc = state.accounts.find(a => (a.nick||"").toLowerCase() === String(state.session.user).toLowerCase());
+      if(acc){
+        state.pin = acc.pin;
+        save();
+        if($("pinScreen")){
+          $("pinScreen").style.display = "flex";
+          if(typeof window.enteredPin !== "undefined") window.enteredPin = "";
+          if(typeof window.setupPin === "function") window.setupPin();
+          return;
+        }
+      }
+    }
+
+    openAuth();
+    showLogin();
+  }
+
+  // запускаем после загрузки DOM (важно для GitHub Pages)
+  document.addEventListener("DOMContentLoaded", startAuthFlow);
+
+})(); // end NEOAUTH
+
 /* ===================== STORAGE / STATE ===================== */
 const STORAGE_KEY = "neobank_super_ui_v1";
 
@@ -2510,3 +2980,4 @@ window.showPin = function(){
     margin-top:4px;
   }
 </style>
+
