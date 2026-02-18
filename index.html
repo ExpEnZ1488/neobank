@@ -927,46 +927,59 @@ input::placeholder{ color: color-mix(in srgb, var(--muted) 85%, transparent); }
 
 <!-- PIN -->
 <div class="pin-screen" id="pinScreen">
-  <!-- AUTH (Login / Register) -->
+ <!-- AUTH SYSTEM -->
+  function showLogin(){
+  $("registerBox").style.display = "none";
+  $("loginBox").style.display = "block";
+}
+
+function showRegister(){
+  $("loginBox").style.display = "none";
+  $("registerBox").style.display = "block";
+}
 <div class="pin-screen" id="authScreen" style="display:none;">
-  <div class="pin-title">NeoBank</div>
-  <div class="pin-sub">Вхід у систему</div>
 
-  <div class="panel sparkle" style="width:min(360px, calc(100% - 28px)); margin-top:20px;">
-    
-    <input id="loginNick" placeholder="Нік" autocomplete="username" />
-    <input id="loginPin" placeholder="PIN (4 цифри)" inputmode="numeric" maxlength="4" autocomplete="current-password" />
+  <div class="auth-card">
 
-    <button class="btn" type="button" onclick="doLogin()">Увійти</button>
+    <div class="auth-logo">NeoBank</div>
+    <div class="auth-sub">Увійдіть або створіть акаунт</div>
 
-    <div class="hint" id="loginHint"></div>
+    <!-- LOGIN FORM -->
+    <div id="loginBox">
 
-    <div style="text-align:center; margin-top:12px; font-size:12px; color:var(--muted); cursor:pointer;"
-         onclick="toggleRegister()">
-      Немає акаунта? Зареєструватися
+      <input id="loginNick" placeholder="Нік" />
+      <input id="loginPin" placeholder="PIN (4 цифри)" maxlength="4" inputmode="numeric" />
+
+      <button class="auth-btn" onclick="doLogin()">Увійти</button>
+
+      <div class="auth-switch">
+        Немає акаунта?
+        <span onclick="showRegister()">Реєстрація</span>
+      </div>
+
+      <div class="hint" id="loginHint"></div>
     </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerBox" style="display:none;">
+
+      <input id="regNick" placeholder="Нік" />
+      <input id="regEmail" placeholder="Пошта" />
+      <input id="regPin" placeholder="PIN (4 цифри)" maxlength="4" inputmode="numeric" />
+
+      <button class="auth-btn" onclick="doRegister()">Створити акаунт</button>
+
+      <div class="auth-switch">
+        Вже є акаунт?
+        <span onclick="showLogin()">Увійти</span>
+      </div>
+
+      <div class="hint" id="regHint"></div>
+    </div>
+
   </div>
 </div>
-<div class="pin-screen" id="registerScreen" style="display:none;">
-  <div class="pin-title">Реєстрація</div>
-  <div class="pin-sub">Створіть акаунт</div>
 
-  <div class="panel sparkle" style="width:min(360px, calc(100% - 28px)); margin-top:20px;">
-    
-    <input id="regNick" placeholder="Нік" />
-    <input id="regEmail" placeholder="Пошта" />
-    <input id="regPin" placeholder="PIN (4 цифри)" maxlength="4" inputmode="numeric" />
-
-    <button class="btn" type="button" onclick="doRegister()">Створити акаунт</button>
-
-    <div class="hint" id="regHint"></div>
-
-    <div style="text-align:center; margin-top:12px; font-size:12px; color:var(--muted); cursor:pointer;"
-         onclick="toggleLogin()">
-      Вже є акаунт? Увійти
-    </div>
-  </div>
-</div>
 
 
     <!-- LOGIN -->
@@ -2340,6 +2353,65 @@ window.showPin = function(){
     setupPin();
   }
 };
+
+
+  .auth-card{
+  width:380px;
+  padding:30px;
+  border-radius:24px;
+  background:rgba(255,255,255,0.08);
+  backdrop-filter:blur(25px);
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  animation:fadeUp .4s ease;
+}
+
+.auth-logo{
+  font-size:24px;
+  font-weight:900;
+  text-align:center;
+}
+
+.auth-sub{
+  font-size:13px;
+  text-align:center;
+  opacity:.7;
+  margin-bottom:10px;
+}
+
+.auth-card input{
+  padding:14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.5);
+  color:white;
+}
+
+.auth-btn{
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  background:var(--accent);
+  font-weight:800;
+  cursor:pointer;
+}
+
+.auth-switch{
+  text-align:center;
+  font-size:13px;
+  opacity:.7;
+}
+
+.auth-switch span{
+  color:var(--accent);
+  cursor:pointer;
+}
+.auth-switch span:hover{
+  text-decoration:underline;
+}
+
 
 
 
