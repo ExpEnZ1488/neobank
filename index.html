@@ -1583,8 +1583,13 @@ input::placeholder{ color: color-mix(in srgb, var(--muted) 85%, transparent); }
 
   // --- Start behavior:
   // show AUTH first, then after login we show PIN screen.
-  function startAuthFlow(){
-    hideAll();
+function startAuthFlow(){
+  hideAll();
+
+  // ⬇️ ВСЕГДА показываем AUTH при старте
+  openAuth();
+  showLogin();
+}
 
     // если уже логинился ранее — можно сразу показать PIN экран
     if(state.session && state.session.loggedIn && state.session.user){
@@ -2980,4 +2985,5 @@ window.showPin = function(){
     margin-top:4px;
   }
 </style>
+
 
