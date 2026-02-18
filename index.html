@@ -2413,5 +2413,480 @@ window.showPin = function(){
 }
 
 
+<!-- ===================== FULL AUTH SYSTEM (PASTE AT VERY BOTTOM) ===================== -->
+<style>
+  /* AUTH UI (doesn't break your theme) */
+  .auth-screen{
+    position:fixed; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:2000;
+  }
+  .auth-card{
+    width:min(420px, calc(100% - 28px));
+    border-radius:28px;
+    padding:18px;
+    background: rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 30px 95px rgba(0,0,0,.55);
+    overflow:hidden;
+    position:relative;
+    animation: fadeUp .35s var(--ease, ease) both;
+  }
+  .auth-card::after{
+    content:"";
+    position:absolute; inset:-40%;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.12), rgba(255,255,255,0));
+    transform: translateX(-70%) rotate(10deg);
+    animation:sparkle 2.8s var(--ease2, ease) infinite;
+    opacity:.55;
+    pointer-events:none;
+  }
+  .auth-head{
+    text-align:center;
+    padding:8px 0 4px;
+  }
+  .auth-logo{
+    font-size:20px;
+    font-weight:900;
+    letter-spacing:.3px;
+  }
+  .auth-sub{
+    font-size:12px;
+    opacity:.75;
+    margin-top:4px;
+  }
+  .auth-tabs{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    margin-bottom:12px;
+  }
+  .auth-tab{
+    flex:1;
+    padding:10px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.06);
+    text-align:center;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .auth-tab.active{
+    border-color: rgba(255,204,0,.45);
+    background: rgba(255,204,0,.18);
+  }
+  .auth-form{
+    display:none;
+    animation: pop .2s var(--ease, ease) both;
+  }
+  .auth-form.show{ display:block; }
+
+  .auth-card input{
+    width:100%;
+    padding:12px;
+    border-radius:14px;
+    margin-bottom:10px;
+    background: rgba(255,255,255,.06);
+    color: var(--text, #fff);
+    outline:none;
+    border:1px solid rgba(255,255,255,.14);
+  }
+  .auth-card input:focus{
+    box-shadow:0 0 0 2px rgba(255,204,0,.18);
+  }
+
+  .auth-btn{
+    width:100%;
+    padding:12px;
+    border-radius:16px;
+    border:none;
+    background: var(--accent, #ffcc00);
+    color:#000;
+    font-weight:900;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+  }
+  .auth-btn::after{
+    content:"";
+    position:absolute; inset:-40%;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.32), rgba(255,255,255,0));
+    transform: translateX(-70%) rotate(10deg);
+    opacity:.55;
+    transition: transform .75s var(--ease2, ease);
+  }
+  .auth-btn:hover::after{ transform: translateX(70%) rotate(10deg); }
+
+  .auth-mini{
+    margin-top:10px;
+    display:flex;
+    gap:10px;
+  }
+  .auth-mini .ghost{
+    flex:1;
+    padding:12px;
+    border-radius:16px;
+    background: transparent;
+    color: var(--text, #fff);
+    border:1px solid rgba(255,255,255,.14);
+    font-weight:900;
+    cursor:pointer;
+  }
+  .auth-note{
+    margin-top:10px;
+    text-align:center;
+    font-size:12px;
+    opacity:.75;
+  }
+  .auth-note b{ color: color-mix(in srgb, var(--accent, #ffcc00) 75%, white); }
+
+  /* Welcome overlay */
+  .welcome{
+    position:fixed; inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background: rgba(0,0,0,.58);
+    z-index:2100;
+  }
+  .welcome.show{ display:flex; animation:fadeIn .18s var(--ease, ease) both; }
+  .welcome-card{
+    width:min(360px, calc(100% - 28px));
+    border-radius:26px;
+    padding:18px;
+    background: rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 28px 95px rgba(0,0,0,.55);
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+    animation: pop .22s var(--ease, ease) both;
+  }
+  .welcome-card::after{
+    content:"";
+    position:absolute; inset:-40%;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.14), rgba(255,255,255,0));
+    transform: translateX(-70%) rotate(10deg);
+    animation:sparkle 2.0s var(--ease2, ease) infinite;
+    opacity:.55;
+    pointer-events:none;
+  }
+  .welcome-ring{
+    width:86px; height:86px;
+    margin:6px auto 12px;
+    border-radius:50%;
+    background: rgba(255,204,0,.14);
+    border:1px solid rgba(255,204,0,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    animation: glowPulse .45s var(--ease, ease) both;
+    position:relative;
+  }
+  .welcome-ring::before{
+    content:"";
+    position:absolute; inset:-8px;
+    border-radius:50%;
+    border:1px solid rgba(255,204,0,.18);
+    opacity:.6;
+    animation: ringSpin 2.8s linear infinite;
+  }
+  .welcome-title{
+    font-weight:900;
+    font-size:16px;
+  }
+  .welcome-sub{
+    font-size:12px;
+    opacity:.78;
+    margin-top:4px;
+  }
+</style>
+
+<!-- AUTH + WELCOME HTML (auto-inserted if not exists) -->
+<div class="auth-screen" id="authScreenX">
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-logo">NeoBank</div>
+      <div class="auth-sub">Вхід / Реєстрація (демо)</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLoginX">Увійти</div>
+      <div class="auth-tab" id="tabRegX">Реєстрація</div>
+    </div>
+
+    <div class="auth-form show" id="loginFormX">
+      <input id="loginNickX" placeholder="Нік" autocomplete="username" />
+      <input id="loginPinX" placeholder="PIN (4 цифри)" maxlength="4" inputmode="numeric" autocomplete="current-password" />
+      <button class="auth-btn" type="button" id="loginBtnX">Увійти</button>
+      <div class="auth-note">Після входу буде PIN-екран ✨</div>
+      <div class="hint" id="loginHintX"></div>
+    </div>
+
+    <div class="auth-form" id="regFormX">
+      <input id="regNickX" placeholder="Нік" autocomplete="username" />
+      <input id="regEmailX" placeholder="Пошта (демо)" autocomplete="email" />
+      <input id="regPinX" placeholder="PIN (4 цифри)" maxlength="4" inputmode="numeric" />
+      <button class="auth-btn" type="button" id="regBtnX">Створити акаунт</button>
+
+      <div class="auth-mini">
+        <button class="ghost" type="button" id="backToLoginX">Назад</button>
+      </div>
+
+      <div class="auth-note"><b>Порада:</b> Нік має бути унікальний</div>
+      <div class="hint" id="regHintX"></div>
+    </div>
+  </div>
+</div>
+
+<div class="welcome" id="welcomeX">
+  <div class="welcome-card">
+    <div class="welcome-ring">
+      <svg width="44" height="44" viewBox="0 0 52 52" aria-hidden="true">
+        <path d="M14 27 L23 36 L38 18"
+              style="stroke: var(--green, #4cd964); stroke-width:6; fill:none; stroke-linecap:round; stroke-linejoin:round;
+                     stroke-dasharray:100; stroke-dashoffset:100; animation: checkDraw .55s var(--ease, ease) forwards .08s;">
+        </path>
+      </svg>
+    </div>
+    <div class="welcome-title" id="welcomeTitleX">Вітаємо!</div>
+    <div class="welcome-sub" id="welcomeSubX">Успішний вхід 👋</div>
+  </div>
+</div>
+
+<script>
+/* ===================== FULL AUTH SYSTEM (JS) ===================== */
+(function(){
+  // tiny helper (reuse your $ if exists)
+  function $(id){ return document.getElementById(id); }
+  function digitsOnly(str){ return (str || "").replace(/\D/g,""); }
+
+  // detect your storage key if present
+  var STORAGE_KEY = window.STORAGE_KEY || "neobank_super_ui_v1";
+
+  // load state (reuse yours if exists)
+  var state;
+  try{
+    state = window.state || JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
+  }catch(e){ state = null; }
+
+  if(!state || typeof state !== "object"){
+    state = { pin:"1234", theme:"dark", cards:[], active:null, categories:["Їжа"], ui:{type:"income", typeFilter:"all", cat:"Їжа", catFilter:"Усі", cardGrad:"--g1"} };
+  }
+
+  // make sure accounts exist
+  if(!Array.isArray(state.accounts)) state.accounts = [];
+
+  // default demo account (only if empty)
+  if(state.accounts.length === 0){
+    state.accounts.push({ nick:"demo", email:"demo@demo.com", pin:"1234" });
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // keep your global state in sync if you use it
+      window.state = state;
+    }catch(e){}
+  }
+
+  // show/hide screens
+  function showAuth(){
+    var a = $("authScreenX");
+    var p = $("pinScreen");
+    var app = $("app");
+    if(a) a.style.display = "flex";
+    if(p) p.style.display = "none";
+    if(app) app.style.display = "none";
+  }
+
+  function showPin(){
+    var a = $("authScreenX");
+    var p = $("pinScreen");
+    var app = $("app");
+    if(a) a.style.display = "none";
+    if(p) p.style.display = "flex";
+    if(app) app.style.display = "none";
+    // ensure your pin dots & keypad appear
+    if(typeof window.setupPin === "function"){
+      try{ window.setupPin(); }catch(e){}
+    }
+  }
+
+  // welcome animation
+  function welcome(nick){
+    var w = $("welcomeX");
+    var t = $("welcomeTitleX");
+    var s = $("welcomeSubX");
+    if(t) t.textContent = "Вітаємо, " + (nick || "користувачу") + "!";
+    if(s) s.textContent = "Авторизація успішна 👋";
+    if(w){
+      w.classList.add("show");
+      setTimeout(function(){ w.classList.remove("show"); }, 950);
+    }
+  }
+
+  // tabs
+  function setTab(which){
+    var tabL = $("tabLoginX");
+    var tabR = $("tabRegX");
+    var fL = $("loginFormX");
+    var fR = $("regFormX");
+
+    var isLogin = (which === "login");
+    if(tabL) tabL.classList.toggle("active", isLogin);
+    if(tabR) tabR.classList.toggle("active", !isLogin);
+    if(fL) fL.classList.toggle("show", isLogin);
+    if(fR) fR.classList.toggle("show", !isLogin);
+  }
+
+  // login
+  function doLogin(){
+    var nick = ($("loginNickX").value || "").trim();
+    var pin  = digitsOnly($("loginPinX").value);
+    var hint = $("loginHintX");
+
+    if(hint){ hint.textContent=""; hint.className="hint"; }
+
+    if(!nick){
+      if(hint){ hint.textContent="Введіть нік"; hint.className="hint bad"; }
+      return;
+    }
+    if(pin.length !== 4){
+      if(hint){ hint.textContent="PIN має бути з 4 цифр"; hint.className="hint bad"; }
+      return;
+    }
+    var acc = state.accounts.find(function(a){ return (a.nick||"").toLowerCase() === nick.toLowerCase(); });
+    if(!acc){
+      if(hint){ hint.textContent="Акаунт не знайдено"; hint.className="hint bad"; }
+      return;
+    }
+    if(String(acc.pin) !== String(pin)){
+      if(hint){ hint.textContent="Невірний PIN"; hint.className="hint bad"; }
+      // shake dots if you have toast / shake
+      if(typeof window.toast === "function") window.toast("Невірний PIN", "Спробуйте ще раз");
+      return;
+    }
+
+    // IMPORTANT: set app PIN to this account so your existing PIN screen works unchanged
+    state.session = { nick: acc.nick, email: acc.email || "" };
+    state.pin = String(acc.pin); // reuse your existing checkPin()
+    save();
+
+    welcome(acc.nick);
+
+    // go to PIN screen
+    setTimeout(function(){
+      showPin();
+      if(typeof window.toast === "function") window.toast("Вхід виконано", "Введіть PIN для входу в додаток");
+    }, 480);
+  }
+
+  // register
+  function doRegister(){
+    var nick = ($("regNickX").value || "").trim();
+    var email = ($("regEmailX").value || "").trim();
+    var pin = digitsOnly($("regPinX").value);
+    var hint = $("regHintX");
+
+    if(hint){ hint.textContent=""; hint.className="hint"; }
+
+    if(!nick || nick.length < 3){
+      if(hint){ hint.textContent="Нік має бути мінімум 3 символи"; hint.className="hint bad"; }
+      return;
+    }
+    if(pin.length !== 4){
+      if(hint){ hint.textContent="PIN має бути з 4 цифр"; hint.className="hint bad"; }
+      return;
+    }
+    var exists = state.accounts.some(function(a){ return (a.nick||"").toLowerCase() === nick.toLowerCase(); });
+    if(exists){
+      if(hint){ hint.textContent="Такий нік вже зайнятий"; hint.className="hint bad"; }
+      return;
+    }
+
+    state.accounts.push({ nick:nick, email:email, pin:String(pin) });
+    state.session = { nick:nick, email:email };
+    state.pin = String(pin); // keep compatible with your PIN screen
+    save();
+
+    if(typeof window.toast === "function") window.toast("Акаунт створено", "Тепер введіть PIN для входу");
+    welcome(nick);
+
+    setTimeout(function(){
+      setTab("login");
+      // prefill login
+      $("loginNickX").value = nick;
+      $("loginPinX").value = "";
+      showPin();
+    }, 520);
+  }
+
+  // wire events
+  function bind(){
+    var tabL = $("tabLoginX");
+    var tabR = $("tabRegX");
+    var back = $("backToLoginX");
+    var bL = $("loginBtnX");
+    var bR = $("regBtnX");
+
+    if(tabL) tabL.onclick = function(){ setTab("login"); };
+    if(tabR) tabR.onclick = function(){ setTab("reg"); };
+    if(back) back.onclick = function(){ setTab("login"); };
+
+    if(bL) bL.onclick = doLogin;
+    if(bR) bR.onclick = doRegister;
+
+    // enter key
+    ["loginNickX","loginPinX"].forEach(function(id){
+      var el = $(id);
+      if(el) el.addEventListener("keydown", function(e){
+        if(e.key === "Enter") doLogin();
+      });
+    });
+    ["regNickX","regEmailX","regPinX"].forEach(function(id){
+      var el = $(id);
+      if(el) el.addEventListener("keydown", function(e){
+        if(e.key === "Enter") doRegister();
+      });
+    });
+  }
+
+  // decide which screen to show at start:
+  // - if you already have session => showPin
+  // - else showAuth
+  function boot(){
+    bind();
+    // show auth immediately (you asked "всё для AUTH")
+    showAuth();
+
+    // if you want auto-skip auth when already logged earlier:
+    // if(state.session && state.session.nick){ showPin(); }
+  }
+
+  // expose helpers if you want to call from console/buttons
+  window.showAuth = showAuth;
+  window.showPin = showPin;
+  window.doLogin = doLogin;
+  window.doRegister = doRegister;
+
+  // start when DOM ready
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+<!-- ===================== /FULL AUTH SYSTEM ===================== -->
+
 
 
