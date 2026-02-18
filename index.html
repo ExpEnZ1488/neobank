@@ -1159,7 +1159,10 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
   }
 };
 
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+};
+
 (function NEOAUTH_V1(){
   // --- safety: если нет state/save/$ — выходим
   if(typeof window.state === "undefined" || typeof window.save !== "function" || typeof window.$ !== "function"){
@@ -2568,6 +2571,7 @@ function renderAll(){
   // update chart
   if(window.__drawSparkChart) window.__drawSparkChart();
 }
+
 
 
 
