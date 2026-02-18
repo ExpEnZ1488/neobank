@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -1156,12 +1157,12 @@ let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     typeFilter: "all",
     cat: "Їжа",
     catFilter: "Усі"
-  }
-};
+      }
+    };
 
 function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-};
+}
 
 (function NEOAUTH_V1(){
   // --- safety: если нет state/save/$ — выходим
@@ -2571,6 +2572,7 @@ function renderAll(){
   // update chart
   if(window.__drawSparkChart) window.__drawSparkChart();
 }
+
 
 
 
